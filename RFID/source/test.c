@@ -15,7 +15,7 @@
 #include "rc522.h"
 #include <bcm2835.h>
 #include <stdlib.h>
-
+#include <unistd.h>
 
 int main()
 {
@@ -27,22 +27,21 @@ int main()
 	RFID_init();
 
 	bcm2835_gpio_fsel(21, BCM2835_GPIO_FSEL_OUTP);
-	bcm2835_gpio_write(21, HIGH);
+	bcm2835_gpio_write(21, LOW);
 	while(1)
 	{
-		printf("going\n");
+		printf("finding\n");
 		if(findCard(0x52,&s)==MI_OK)
 		{
-			printf("hello boy!\n");
+			printf("hello huahua!\n");
 			if(anticoll(id)==MI_OK)
 			{
 				for(i=0;i<4;i++)
 					printf("%d ",id[i]);
 				printf("\n");
-				bcm2835_gpio_write(21, LOW);
-				system("mplayer welcome.wav");
-				sleep(1);
 				bcm2835_gpio_write(21,HIGH);
+				delay(1000);
+				bcm2835_gpio_write(21,LOW);
 			}
 			else printf("ERROR\n");
 		}
