@@ -63,11 +63,12 @@ int main (int argc, char *argv[])
 
     char              buf[256];
 
-//gpio init
+    //gpio init
     if (!bcm2835_init())
-                return 1;
+        return 1;
 
-//设置引脚为输出状态
+
+    //设置引脚为输出状态
     bcm2835_gpio_fsel(R_PIN, BCM2835_GPIO_FSEL_OUTP);
     bcm2835_gpio_fsel(Y_PIN, BCM2835_GPIO_FSEL_OUTP);
     bcm2835_gpio_fsel(G_PIN, BCM2835_GPIO_FSEL_OUTP);
@@ -85,7 +86,46 @@ int main (int argc, char *argv[])
         return -2;
     }
     log_nrml("open comport[%s] for AT command ok\n", comport->dev_name);
-    check_esp(comport );
+
+    if(  check_esp(comport ) < 0 )
+    {
+        printf("check_esp unsuccessfully\n");
+        return -3;
+    }
+
+    if(  join_route(comport) < 0 )
+    {
+        printf("join route unsuccessfully\n");
+        return -4;
+    }
+
+    if( join_mqtt(comport) < 0 ) 
+    {
+        printf("join mqtt unsuccessfully\n");
+        disconn_mqtt(comport);
+        return -5;
+    }
+#if 1
+    if( mqtt_sub(comport) < 0 ) 
+    {
+        printf("sub unsuccessfully\n");
+        disconn_mqtt(comport);
+        return -6;
+    }
+
+    if( mqtt_pub(comport) < 0 )
+    {
+        printf("pub unsuccessfully\n");
+        disconn_mqtt(comport);
+        return -7;
+    }
+#endif 
+    if( disconn_mqtt(comport) < 0 )
+    {
+        printf("disconn mqtt unsuccessfully\n");
+        disconn_mqtt(comport);
+        return -8;
+    }
 
     comport_term(comport);
     logger_term();

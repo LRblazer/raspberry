@@ -18,6 +18,7 @@
 #include "logger.h"
 #include "atcmd.h"
 #include "util_time.h"
+#include "delay.h"
 
 int check_esp(comport_t *comport);
 int join_route(comport_t *comport);
