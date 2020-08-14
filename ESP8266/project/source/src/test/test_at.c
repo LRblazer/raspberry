@@ -10,10 +10,7 @@
  *        ChangeLog:  1, Release initial version on "14/08/20 15:17:40"
  *                 
  **********************************************************************************/
-#include <bcm2835.h>
-#include <stdio.h>
-#include <signal.h>
-#include <unistd.h>
+
 #include "atcmd.h"
 #include "logger.h"
 #include <bcm2835.h>
@@ -23,12 +20,6 @@
 #include "comport.h"
 #include "logger.h"
 #include "atcmd.h"
-#include "esp_mqtt.h"
-
-#define R_PIN 13
-#define Y_PIN 19
-#define G_PIN 26
-
 
 #if 0
 {
@@ -49,28 +40,16 @@
 }
 #endif 
 
-//int check_esp(comport_t *comport); 
-//int join_route(comport_t *comport);
-
 int main (int argc, char *argv[])
 { 
     logger_t          logger;
 
     comport_t        *comport = NULL;
-    char             *dev_name = "/dev/ttyUSB0";
+    char             *dev_name = "/dev/ttyUSB4";
     char             *settings = "8N1N";
     unsigned long     baudrate = 115200;
 
     char              buf[256];
-
-//gpio init
-    if (!bcm2835_init())
-                return 1;
-
-//设置引脚为输出状态
-    bcm2835_gpio_fsel(R_PIN, BCM2835_GPIO_FSEL_OUTP);
-    bcm2835_gpio_fsel(Y_PIN, BCM2835_GPIO_FSEL_OUTP);
-    bcm2835_gpio_fsel(G_PIN, BCM2835_GPIO_FSEL_OUTP);
 
     if ( logger_init(&logger, DBG_LOG_FILE, LOG_LEVEL_NRML, LOG_ROLLBACK_NONE) || logger_open() )
     {
@@ -85,11 +64,45 @@ int main (int argc, char *argv[])
         return -2;
     }
     log_nrml("open comport[%s] for AT command ok\n", comport->dev_name);
-    check_esp(comport );
+
+    if( send_atcmd(comport, "AT\r", 500, AT_EXPSTR, AT_ERRSTR, buf, sizeof(buf)) <= 0 )
+    {
+        log_err("Send command AT got error\n");
+        return -3;
+    }
+    printf("Send command 'AT' got reply: %s\n", buf);
+
+    if( !send_atcmd_check_ok(comport, "ATE0\r", 500) )
+    {
+        log_nrml("Send command 'ATE0' got OK\n");
+    }
+
+    if( !send_atcmd_check_value(comport, "AT+CGMM\r", 500, buf, sizeof(buf) ) )
+    {
+        log_nrml("Send command 'AT+CGMM' got reply: %s\n", buf);
+    }
+
+
+    if( !send_atcmd_check_request(comport, "AT+CSQ\r", 500, buf, sizeof(buf)) )
+    {
+        log_nrml("Send command 'AT+CSQ' got reply: %s\n", buf);
+    }
+
+    if( !send_atcmd_check_request(comport, "AT+CREG?\r", 1000, buf, sizeof(buf)) )
+    {
+        log_nrml("Send command 'AT+CREG?' got reply: %s\n", buf);
+    }
+
+
+    if( !send_atcmd_check_request(comport, "AT+COPS?\r", 1000, buf, sizeof(buf)) )
+    {
+        log_nrml("Send command 'AT+CREG?' got reply: %s\n", buf);
+    }
 
     comport_term(comport);
     logger_term();
 
     return 0; 
 } 
+
 

@@ -23,7 +23,6 @@
 #include "comport.h"
 #include "logger.h"
 #include "atcmd.h"
-#include "esp_mqtt.h"
 
 #define R_PIN 13
 #define Y_PIN 19
@@ -49,8 +48,37 @@
 }
 #endif 
 
-//int check_esp(comport_t *comport); 
-//int join_route(comport_t *comport);
+int check_esp(comport_t *comport) 
+{
+
+    char s_buf[256];
+    if( send_atcmd(comport, "AT\r\n", 500, AT_EXPSTR, AT_ERRSTR,s_buf, sizeof(s_buf)) <= 0 )
+    {
+        log_err("Send command AT got error\n");
+        return -3;
+    }
+    printf("Send command 'AT' got reply: %s\n",s_buf);
+
+//    memset(s_buf, 0, sizeof(s_buf));
+    if( send_atcmd(comport, "AT+GMR\r\n", 500, AT_EXPSTR, AT_ERRSTR,s_buf, sizeof(s_buf)) <= 0 )
+    {
+        log_err("Send command AT got error\n");
+        return -3;
+    }
+    printf("Send command 'AT+GMR' got reply: %s\n",s_buf);
+
+  //  memset(s_buf, 0, sizeof(s_buf));
+    if( send_atcmd(comport, "AT+CIFSR\r\n", 500, AT_EXPSTR, AT_ERRSTR,s_buf, sizeof(s_buf)) <= 0 )
+    {
+        log_err("Send command AT got error\n");
+        return -3;
+    }
+    printf("Send command 'AT+CIFSR' got reply: %s\n",s_buf);
+
+
+    return 1;
+}
+
 
 int main (int argc, char *argv[])
 { 
@@ -92,4 +120,5 @@ int main (int argc, char *argv[])
 
     return 0; 
 } 
+
 
