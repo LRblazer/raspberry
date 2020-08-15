@@ -203,7 +203,7 @@ int mqtt_pub(comport_t *comport, float *temp, uint8_t state)
     char s_buf[512];
 
 
-     snprintf( s_buf, sizeof(s_buf),"AT+TCMQTTPUB=\"$thing/up/property/KL71ETP5T1/dev_temp\",0,\"{\\\"method\\\": \\\"report\\\"\\,\\\"clientToken\\\": \\\"123\\\"\\,\\\"timestamp\\\": 1212121221\\,\\\"params\\\": {\\\"Temperature\\\": %. 2f\\,\\\"light\\\": %d}}\"\r\n\0",*temp, state );
+     snprintf( s_buf, sizeof(s_buf),"AT+TCMQTTPUB=\"$thing/up/property/KL71ETP5T1/dev_temp\",0,\"{\\\"method\\\": \\\"report\\\"\\,\\\"clientToken\\\": \\\"123\\\"\\,\\\"timestamp\\\": 1212121221\\,\\\"params\\\": {\\\"Temperature\\\": %.2f\\,\\\"light\\\": %d}}\"\r\n\0",*temp, state );
 
 
     printf("s_buf:%s\n", s_buf);

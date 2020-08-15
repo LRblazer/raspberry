@@ -39,14 +39,23 @@ void sig_exit(int sig_num)
         g_stop = 1;
 }
 
-
+#if 0
 void sig_alarm(int sig_num)
 {
-    alarm(30);
+    alarm(50);
     printf("start pub \n");
                     
+    if( mqtt_pub(comport,&temp, light_state) < 0 )
+    {
+        printf("pub unsuccessfully\n");
+        disconn_mqtt(comport);
+        exit 0;
+    }
+    
+    printf("pub down\n");
 }
 
+#endif
 
 int main (int argc, char *argv[])
 { 
@@ -67,8 +76,8 @@ int main (int argc, char *argv[])
     int     mqtt_state = -1;
     
     signal(SIGINT,sig_exit);
-    signal(SIGALRM,sig_alarm);
-    alarm(30);
+   // signal(SIGALRM,sig_alarm);
+   // alarm(50);
     
     //gpio init
     if (!bcm2835_init())
@@ -157,11 +166,10 @@ int main (int argc, char *argv[])
         //将黄灯的状态和温度显示在屏幕上
         show_msg(&temp, light_state);
         delay_ms(8000);
-    }
 
 
-
-#if 0 
+        //将采集的温度和台灯状态上发到腾讯云
+#if 1 
     if( mqtt_pub(comport,&temp, light_state) < 0 )
     {
         printf("pub unsuccessfully\n");
@@ -169,9 +177,15 @@ int main (int argc, char *argv[])
         return -7;
     }
 #endif 
+    delay_ms(1000);
+   }
 
 
 
+
+
+
+    delay_ms(8000);
     //退出程序前，断开与腾讯云的连接
     if( disconn_mqtt(comport) < 0 )
     {
