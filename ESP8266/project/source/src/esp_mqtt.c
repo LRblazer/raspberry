@@ -178,7 +178,7 @@ int mqtt_sub(comport_t *comport)
 
     delay_ms(3000);
     //AT+TCMQTTSUB="$thing/down/property/KL71ETP5T1/dev_temp",0
-    if( send_atcmd(comport, "AT+TCMQTTSUB=\"$thing/down/property/KL71ETP5T1/dev_temp\",0\r\n", 500, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
+    if( send_atcmd(comport, "AT+TCMQTTSUB=\"$thing/down/property/KL71ETP5T1/dev_temp\",0\r\n", 2000, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
     {
         log_err("Send command AT+TCMQTTSUB got error\n");
         return -1;
@@ -196,14 +196,21 @@ int mqtt_sub(comport_t *comport)
  * parameters :    自定义的结构体
  * retvalue ：     执行正确返回0
  ***********************************************************/
-int mqtt_pub(comport_t *comport)
+int mqtt_pub(comport_t *comport, float *temp, uint8_t state)
 {
 
-    char r_buf[256];
+    char r_buf[512];
+    char s_buf[512];
+
+
+     snprintf( s_buf, sizeof(s_buf),"AT+TCMQTTPUB=\"$thing/up/property/KL71ETP5T1/dev_temp\",0,\"{\\\"method\\\": \\\"report\\\"\\,\\\"clientToken\\\": \\\"123\\\"\\,\\\"timestamp\\\": 1212121221\\,\\\"params\\\": {\\\"Temperature\\\": %. 2f\\,\\\"light\\\": %d}}\"\r\n\0",*temp, state );
+
+
+    printf("s_buf:%s\n", s_buf);
 
     delay_ms(3000);
     //AT+TCMQTTPUB="$thing/up/property/KL71ETP5T1/dev_temp",0,"{\"method\": \"report\"\,\"clientToken\": \"123\"\,\"timestamp\": 1212121221\,\"params\": {\"Temperature\": 32\,\"light\": 1}}"
-    if( send_atcmd(comport, "AT+TCMQTTPUB=\"$thing/up/property/KL71ETP5T1/dev_temp\",0,\"{\"method\": \"report\"\,\"clientToken\": \"123\"\,\"timestamp\": 1212121221\,\"params\": {\"Temperature\": 25\,\"light\": 1}}\"\r\n", 500, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
+    if( send_atcmd(comport,s_buf , 2000, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
     {
         log_err("Send command AT+TCMQTTPUB got error\n");
         return -1;
@@ -211,6 +218,8 @@ int mqtt_pub(comport_t *comport)
     printf("Send command 'AT+TCMQTTPUB' got reply: %s\n",r_buf);
     memset(r_buf, 0, sizeof(r_buf));
 
+    delay_ms(3000);
+    delay_ms(3000);
     delay_ms(3000);
     return 0;
 }
@@ -228,6 +237,7 @@ int disconn_mqtt(comport_t *comport)
     char r_buf[256];
 
 
+    delay_ms(5000);
 
     //AT+TCMQTTUNSUP 取消订阅
     if( send_atcmd(comport, "AT+TCMQTTUNSUB=\"$thing/down/property/KL71ETP5T1/dev_temp\"\r\n", 500, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
@@ -238,6 +248,7 @@ int disconn_mqtt(comport_t *comport)
     printf("Send command 'AT+TCMQTTUNSUP' got reply: %s\n",r_buf);
     memset(r_buf, 0, sizeof(r_buf));
   
+    delay_ms(5000);
    
     //AT+TCMQTTDISCONN 断开mqtt服务器连接
     if( send_atcmd(comport, "AT+TCMQTTDISCONN\r\n", 2500, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )

@@ -23,10 +23,9 @@
 #include <string.h>
 #include <bcm2835.h>
 
-#define G_PIN 26
-#define R_PIN 19
 
-void show_time(void)
+//在OLED屏幕上显示时间
+int show_time(void)
 {
     char buf_time[20] ;
     memset(buf_time, 0, sizeof(buf_time));
@@ -35,18 +34,28 @@ void show_time(void)
     GUI_ShowString(0,20,buf_time,16,1);
     delay_ms(1000);
     OLED_Clear(0);
+
+    return 0;
 }
-void show_msg(void)
+
+
+/************************************************************************
+ * name :           show_msg
+ * function :       在OLED上显示温度，esp8266连接情况，台灯黄灯的状态
+ * parameters :     ds18b20获取的温度，和黄灯状态
+ * retvalue ：      正确返回0
+ *************************************************************************/
+int show_msg(float *temp, uint8_t state)
 {
 
-    float temp =0;
+ //   float temp =0;
     char  buf_temp[5];
-    uint8_t state = bcm2835_gpio_lev(R_PIN);
+ //   uint8_t state = bcm2835_gpio_lev(R_PIN);
   
     memset(buf_temp, 0, sizeof(buf_temp));
    
-    get_temperature(&temp);
-    snprintf(buf_temp,sizeof(buf_temp),"%.2f",temp);
+  //  get_temperature(&temp);
+    snprintf(buf_temp,sizeof(buf_temp),"%.2f",*temp);
     
     GUI_DrawLine(0, 10, WIDTH-1, 10,1);
     GUI_DrawLine(WIDTH/2-1,11,WIDTH/2-1,HEIGHT-1,1);
@@ -74,31 +83,35 @@ void show_msg(void)
     }
 
 
-    delay_ms(1500);
+    delay_ms(10000);
     OLED_Clear(0);
     
 #if 1
     char buf_time[20] ;
     memset(buf_time, 0, sizeof(buf_time));
     get_time(buf_time);
-    GUI_ShowString(0,0,"current time:",16,1);
-    GUI_ShowString(0,20,buf_time,16,1);
+ //   GUI_ShowString(0,0,"current time:",16,1);
+    GUI_ShowString(20,15,buf_time,16,1);
     
     delay_ms(1000);
     OLED_Clear(0);
 #endif
 
 
+    return 0;
 }
 
-
-void show_connect_result(int connect_result)
+//在屏幕显示是否成功连上mqtt
+int show_connect_result(int connect_result)
 {
-    if( 1 == connect_result){
+    if( 0 == connect_result){
         GUI_ShowString(0,1,"connect successfully",8,1);
     }else{
         GUI_ShowString(0,1,"connect fail",8,1);
     }
+    delay_ms(4000);
+    OLED_Clear(0);
+    return 0;
 }
 
 

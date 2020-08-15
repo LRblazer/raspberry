@@ -23,6 +23,7 @@
 #include "comport.h"
 #include "logger.h"
 #include "atcmd.h"
+#include "esp_mqtt.h"
 
 #define R_PIN 13
 #define Y_PIN 19
@@ -48,37 +49,6 @@
 }
 #endif 
 
-int check_esp(comport_t *comport) 
-{
-
-    char s_buf[256];
-    if( send_atcmd(comport, "AT\r\n", 500, AT_EXPSTR, AT_ERRSTR,s_buf, sizeof(s_buf)) <= 0 )
-    {
-        log_err("Send command AT got error\n");
-        return -3;
-    }
-    printf("Send command 'AT' got reply: %s\n",s_buf);
-
-//    memset(s_buf, 0, sizeof(s_buf));
-    if( send_atcmd(comport, "AT+GMR\r\n", 500, AT_EXPSTR, AT_ERRSTR,s_buf, sizeof(s_buf)) <= 0 )
-    {
-        log_err("Send command AT got error\n");
-        return -3;
-    }
-    printf("Send command 'AT+GMR' got reply: %s\n",s_buf);
-
-  //  memset(s_buf, 0, sizeof(s_buf));
-    if( send_atcmd(comport, "AT+CIFSR\r\n", 500, AT_EXPSTR, AT_ERRSTR,s_buf, sizeof(s_buf)) <= 0 )
-    {
-        log_err("Send command AT got error\n");
-        return -3;
-    }
-    printf("Send command 'AT+CIFSR' got reply: %s\n",s_buf);
-
-
-    return 1;
-}
-
 
 int main (int argc, char *argv[])
 { 
@@ -91,15 +61,21 @@ int main (int argc, char *argv[])
 
     char              buf[256];
 
-//gpio init
-    if (!bcm2835_init())
-                return 1;
+    float temp = 0;
+    int temp_rv = 0;
 
-//设置引脚为输出状态
+    //gpio init
+    if (!bcm2835_init())
+        return 1;
+
+
+
+    //设置引脚为输出状态，即初始化GPIO
     bcm2835_gpio_fsel(R_PIN, BCM2835_GPIO_FSEL_OUTP);
     bcm2835_gpio_fsel(Y_PIN, BCM2835_GPIO_FSEL_OUTP);
     bcm2835_gpio_fsel(G_PIN, BCM2835_GPIO_FSEL_OUTP);
 
+    //日志初始化
     if ( logger_init(&logger, DBG_LOG_FILE, LOG_LEVEL_NRML, LOG_ROLLBACK_NONE) || logger_open() )
     {
         printf("initialise logger system failure\n");
@@ -107,18 +83,57 @@ int main (int argc, char *argv[])
     }
     log_nrml("logger system start ok\n");
 
+    //串口初始化并打开串口
     if( !(comport=comport_init(dev_name, baudrate, settings)) || comport_open(comport)<0 )
     {
         log_err("initialise comport[%s] for AT command test failure: %s\n", dev_name);
         return -2;
     }
     log_nrml("open comport[%s] for AT command ok\n", comport->dev_name);
-    check_esp(comport );
+
+    if(  check_esp(comport ) < 0 )
+    {
+        printf("check_esp unsuccessfully\n");
+        return -3;
+    }
+
+    if(  join_route(comport) < 0 )
+    {
+        printf("join route unsuccessfully\n");
+        return -4;
+    }
+
+    if( join_mqtt(comport) < 0 ) 
+    {
+        printf("join mqtt unsuccessfully\n");
+        disconn_mqtt(comport);
+        return -5;
+    }
+
+    if( mqtt_sub(comport) < 0 ) 
+    {
+        printf("sub unsuccessfully\n");
+        disconn_mqtt(comport);
+        return -6;
+    }
+
+    if( mqtt_pub(comport) < 0 )
+    {
+        printf("pub unsuccessfully\n");
+        disconn_mqtt(comport);
+        return -7;
+    }
+
+    if( disconn_mqtt(comport) < 0 )
+    {
+        printf("disconn mqtt unsuccessfully\n");
+        disconn_mqtt(comport);
+        return -8;
+    }
 
     comport_term(comport);
     logger_term();
 
     return 0; 
 } 
-
 

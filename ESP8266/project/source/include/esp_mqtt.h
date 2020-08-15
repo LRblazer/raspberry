@@ -24,7 +24,7 @@ int check_esp(comport_t *comport);
 int join_route(comport_t *comport);
 int join_mqtt(comport_t *comport);
 int mqtt_sub(comport_t *comport);
-int mqtt_pub(comport_t *comport);
+int mqtt_pub(comport_t *comport, float *temp, uint8_t state);
 int disconn_mqtt(comport_t *comport);
 
 

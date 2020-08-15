@@ -15,9 +15,9 @@
 #define _MENU_SHOW_H_
 
 
-void show_connect_result(int connect_result);
-void show_time(void);
-void show_msg(void);
+int show_connect_result(int connect_result);
+int show_time(void);
+int show_msg(float *temp, uint8_t state);
 
 #endif
 
