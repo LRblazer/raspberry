@@ -1,0 +1,58 @@
+mosquitto_pub -h "bling.iot-as-mqtt.cn-shanghai.aliyuncs.com" -p 1883 -t "/sys/a1hsrkSTTuX/bling/thing/event/property/post" -i "250520|securemode=3,signmethod=hmacsha1|" -u "bling&a1hsrkSTTuX" -P D52B320D3A4A5378C029816F925610BD3B462214 -m "{\"method\":\"thing.service.property.set\",\"id\":\"18858984727\",\"params\":{\"Temperature\":55, \"Humidity\":66,},\"version\":\"1.0.0\"}"
+
+mosquitto_sub -h "bling.iot-as-mqtt.cn-shanghai.aliyuncs.com" -p 1883 -t "/a1hsrkSTTuX/bling/user/get" -i "250520|securemode=3,signmethod=hmacsha1|" -u "bling&a1hsrkSTTuX" -P D52B320D3A4A5378C029816F925610BD3B462214
+
+
+/**************************************
+测试可用性check_esp（）
+***************************************/
+AT
+AT+GMR
+//AT+RST
+AT+CIFSR
+
+/*************************
+加入路由器 join_route（）
+*********************/
+AT+CWQAP
+AT+CWJAP="xxs","xuxinhua666"
+AT+PING="baidu.com"
+//AT+CIFSR
+
+
+/**********************
+加入mqtt服务器 join_mqtt（）
+***********************/
+
+AT+TCDEVINFOSET=1,"KL71ETP5T1","dev_temp","M/LL3AQfylFNUwG5FryrbA=="
+AT+TCDEVINFOSET?   		//查询上面配置的信息
+AT+TCMQTTSTATE? 
+AT+TCMQTTCONN=1,5000,240,1,1	//连接腾讯云
+
+/********************************
+发布与订阅
+*************************************/
+AT+TCMQTTPUB="$thing/up/property/KL71ETP5T1/dev_temp",0,"{\"method\": \"report\"\,\"clientToken\": \"123\"\,\"timestamp\": 1212121221\,\"params\": {\"Temperature\": 32\,\"light\": 1}}"
+
+AT+TCMQTTSUB="$thing/down/property/KL71ETP5T1/dev_temp",0
+
+//上报格式
+{\"method\": \"report\"\,\"clientToken\": \"123\"\,\"timestamp\": 1212121221\,\"params\": {\"Temperature\": 32\,\"light\": 1}}
+
+/**************************
+断开所有的连接并取消订阅
+*****************************/
+
+AT+TCMQTTUNSUB="$thing/down/property/KL71ETP5T1/dev_temp"
+AT+TCMQTTDISCONN	//断开mqtt服务器连接
+AT+TCRESTORE			//抹除原来配置的mqtt平台信息
+AT+CWQAP		//断开与路由器的连接
+
+
+
+
+
+
+
+
+ snprintf( s_buf, sizeof(s_buf),"AT+TCMQTTPUB=\"$thing/up/property/KL71ETP5T1/dev_temp\",0,\"{\\\"method\\\": \\\"report\\\"\\,\\\"clientToken\\\": \\\"123\\\"\\,\\\"timestamp\\\": 1212121221\\,\\\"params\\\": {\\\"Temperature\\\": %. 2f\\,\\\"light\\\": %d}}\"\r\n\0",temp, state );
