@@ -153,7 +153,7 @@ int join_mqtt(comport_t *comport)
     printf("Send command 'AT+TCMQTTCONN=1,5000,240,1,1' got reply: %s\n",r_buf);
     memset(r_buf, 0, sizeof(r_buf));
 
-    delay_ms(3000);
+    delay_ms(5000);
 
     //AT+TCMQTTSTATE?   查询是否连接成功
     if( send_atcmd(comport, "AT+TCMQTTSTATE?\r\n", 500, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
@@ -208,7 +208,7 @@ int mqtt_pub(comport_t *comport, float *temp, uint8_t state)
 
     printf("s_buf:%s\n", s_buf);
 
-    delay_ms(3000);
+   // delay_ms(3000);
     //AT+TCMQTTPUB="$thing/up/property/KL71ETP5T1/dev_temp",0,"{\"method\": \"report\"\,\"clientToken\": \"123\"\,\"timestamp\": 1212121221\,\"params\": {\"Temperature\": 32\,\"light\": 1}}"
     if( send_atcmd(comport,s_buf , 2000, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
     {

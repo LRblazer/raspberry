@@ -10,6 +10,7 @@
  *        ChangeLog:  1, Release initial version on "14/08/20 15:17:40"
  *                 
  **********************************************************************************/
+#include <pthread.h>
 #include <bcm2835.h>
 #include <stdio.h>
 #include <signal.h>
@@ -57,28 +58,46 @@ void sig_exit(int sig_num)
 }
 
 #if 0
+//80s上传一次数据到腾讯云，防止发送信息过多
+comport_t        *comport = NULL;
+float             temp = 0;
+uint8_t           light_state = 2;
 void sig_alarm(int sig_num)
 {
-    alarm(50);
-    printf("start pub \n");
+    alarm(80);
+    printf("catch alarm +++++++++++++++++++++\n");
+    printf("start pub +++++++++++++++++++++\n");
 
     if( mqtt_pub(comport,&temp, light_state) < 0 )
     {
         printf("pub unsuccessfully\n");
         disconn_mqtt(comport);
-        exit 0;
+        exit;
     }
 
     printf("pub down\n");
+    delay_ms(1000);
 }
 
 #endif
+
+typedef void *(THREAD_BODY) (void *thread_arg);
+void *thread_worker(void *ctx);
+int thread_start(pthread_t * thread_id, THREAD_BODY * thread_workbody, void *thread_arg);  
+
+typedef struct   worker_ctx_s 
+{ 
+        pthread_mutex_t   lock; 
+} worker_ctx_t; 
+
+comport_t         *comport;
 
 int main (int argc, char *argv[])
 { 
     logger_t          logger;
 
-    comport_t        *comport = NULL;
+
+//    comport_t        *comport = NULL;
     char             *dev_name = "/dev/ttyUSB0";
     char             *settings = "8N1N";
     unsigned long     baudrate = 115200;
@@ -92,9 +111,12 @@ int main (int argc, char *argv[])
 
     int               mqtt_state = -1;
 
+    pthread_t         tid;
+    worker_ctx_t      worker_ctx;
+
     signal(SIGINT,sig_exit);
-    // signal(SIGALRM,sig_alarm);
-    // alarm(50);
+    //     signal(SIGALRM,sig_alarm);
+    //     alarm(80);
 
     //gpio init
     if (!bcm2835_init())
@@ -162,8 +184,11 @@ int main (int argc, char *argv[])
         return -6;
     }
 
+    thread_start(&tid, thread_worker, &worker_ctx);
+
     while(!g_stop)
     {
+        sleep(3);
         //获取黄灯状态和温度
         light_state = bcm2835_gpio_lev(Y_PIN);
         temp_rv  = get_temperature(&temp);
@@ -189,18 +214,22 @@ int main (int argc, char *argv[])
 
         //将采集的温度和台灯状态上发到腾讯云
 #if 1 
+        pthread_mutex_trylock(&worker_ctx.lock); 
         if( mqtt_pub(comport,&temp, light_state) < 0 )
         {
             printf("pub unsuccessfully\n");
             disconn_mqtt(comport);
             return -7;
         }
+        pthread_mutex_unlock(&worker_ctx.lock); 
 #endif 
         delay_ms(1000);
     }
 
 
 
+    //释放互斥锁
+    pthread_mutex_destroy(&worker_ctx.lock);
 
 
 
@@ -226,3 +255,91 @@ int main (int argc, char *argv[])
 } 
 
 
+int thread_start(pthread_t * thread_id, THREAD_BODY * thread_workbody, void *thread_arg)
+{  
+    int                 rv = -1;  
+    pthread_attr_t      thread_attr;
+    if( pthread_attr_init(&thread_attr) )     
+    { 
+        printf("pthread_attr_init() failure: %s\n", strerror(errno));      
+        goto CleanUp;  
+    }
+
+    if( pthread_attr_setstacksize(&thread_attr, 120*1024) ) 
+    { 
+        printf("pthread_attr_setstacksize() failure: %s\n", strerror(errno));     
+        goto CleanUp; 
+    }
+
+    if( pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED) )       
+    {   
+        printf("pthread_attr_setdetachstate() failure: %s\n", strerror(errno));  
+        goto CleanUp; 
+    }
+
+    /*  Create the thread */  
+    if( pthread_create(thread_id, &thread_attr, thread_workbody, thread_arg) )    
+    {    
+        printf("Create thread failure: %s\n", strerror(errno));      
+        goto CleanUp;
+    }
+    rv = 0;            
+CleanUp:       
+    /*  Destroy the  attributes  of  thread */     
+    pthread_attr_destroy(&thread_attr);  
+    return rv;
+}
+
+
+
+void *thread_worker(void *ctx)
+{
+            int                  rv;    
+            char                 r_buf[1024];     
+            int                  i;
+            worker_ctx_t        *ictx = (worker_ctx_t *)ctx;
+               
+            if( !ctx ) 
+            {  
+                printf("Invalid input arguments in %s()\n", __FUNCTION__);     
+                pthread_exit(NULL); 
+            }
+             
+            
+            printf("Child thread start to listen output comport....\n");
+            
+            while(1)       
+            {  
+
+                pthread_mutex_trylock(&ictx->lock); 
+                                                                                
+                rv = comport_recv(comport,r_buf,1024 , 1);
+                if (rv > 0 && strstr(r_buf, "control")!= NULL )
+                {   
+                    printf("receive[ %d ] buf from tengxun is: %s\n ", rv, r_buf);     
+                    memset(r_buf, 0, sizeof(r_buf));        
+                    rv = comport_recv(comport,r_buf,1024 , 2);
+                    printf("receive[ %d ] buf from tengxun is: %s\n ", rv, r_buf);     
+                    char *ptr = strstr(r_buf, "light");
+                    ptr += 7 ;
+                    
+                    char state[2];
+                    strncpy(state, ptr, 1);
+
+                    printf("light control state:%c\n", state[0]);
+
+                    if ( state[0] == '1')
+                    {
+                        printf("turn on yellow light \n");
+                        turn_light_on(Y_PIN);  
+
+                    }else if(state[0]== '0')
+                    {
+                        printf("turn on yellow light \n");
+                        turn_light_off(Y_PIN); 
+                    }
+                }
+                pthread_mutex_unlock(&ictx->lock); 
+                memset(r_buf, 0, sizeof(r_buf));        
+            }
+} 
