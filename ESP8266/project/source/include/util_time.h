@@ -1,12 +1,12 @@
 /********************************************************************************
- *      Copyright:  (C) 2020 LingYun IoT System Studio
+ *      Copyright:  (C) 2020 xuxinhua
  *                  All rights reserved.
  *
  *       Filename:  util_time.h
  *    Description:  This head file is system time, timer API
  *
  *        Version:  1.0.0(07/23/2020)
- *         Author:  Guo Wenxue <guowenxue@gmail.com>
+ *         Author:  xuxinhua <1411032148@qq.com>
  *      ChangeLog:  1, Release initial version on "07/23/2020 07:46:37 AM"
  *                 
  ********************************************************************************/

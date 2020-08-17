@@ -1,3 +1,4 @@
+//mosquitto使用
 mosquitto_pub -h "bling.iot-as-mqtt.cn-shanghai.aliyuncs.com" -p 1883 -t "/sys/a1hsrkSTTuX/bling/thing/event/property/post" -i "250520|securemode=3,signmethod=hmacsha1|" -u "bling&a1hsrkSTTuX" -P D52B320D3A4A5378C029816F925610BD3B462214 -m "{\"method\":\"thing.service.property.set\",\"id\":\"18858984727\",\"params\":{\"Temperature\":55, \"Humidity\":66,},\"version\":\"1.0.0\"}"
 
 mosquitto_sub -h "bling.iot-as-mqtt.cn-shanghai.aliyuncs.com" -p 1883 -t "/a1hsrkSTTuX/bling/user/get" -i "250520|securemode=3,signmethod=hmacsha1|" -u "bling&a1hsrkSTTuX" -P D52B320D3A4A5378C029816F925610BD3B462214
@@ -36,6 +37,9 @@ AT+TCMQTTPUB="$thing/up/property/KL71ETP5T1/dev_temp",0,"{\"method\": \"report\"
 
 AT+TCMQTTSUB="$thing/down/property/KL71ETP5T1/dev_temp",0
 
+//下发的格式
++TCMQTTRCVPUB:"$thing/down/property/KL71ETP5T1/dev_temp",124,"{"method":"control","clientToken":"clientToken-29a223a1-d936-45e3-aef9-1da3805f9acf","params":{"light":0,"Temperature":1.4}}"
+
 //上报格式
 {\"method\": \"report\"\,\"clientToken\": \"123\"\,\"timestamp\": 1212121221\,\"params\": {\"Temperature\": 32\,\"light\": 1}}
 
@@ -53,6 +57,6 @@ AT+CWQAP		//断开与路由器的连接
 
 
 
-
+//程序上报的格式
 
  snprintf( s_buf, sizeof(s_buf),"AT+TCMQTTPUB=\"$thing/up/property/KL71ETP5T1/dev_temp\",0,\"{\\\"method\\\": \\\"report\\\"\\,\\\"clientToken\\\": \\\"123\\\"\\,\\\"timestamp\\\": 1212121221\\,\\\"params\\\": {\\\"Temperature\\\": %. 2f\\,\\\"light\\\": %d}}\"\r\n\0",temp, state );

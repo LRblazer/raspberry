@@ -26,15 +26,32 @@
 #include "temp.h"
 #include "get_time.h"
 #include "esp_mqtt.h"
+#include "gpio.h"
+
+#if 0
 
 #define R_PIN 13
 #define Y_PIN 19
 #define G_PIN 26
 
+#define turn_light_on(x) bcm2835_gpio_write(x, HIGH) 
+#define turn_light_off(x) bcm2835_gpio_write(x, LOW) 
+
+void GPIO_init()
+{
+    //设置引脚为输出状态，即初始化GPIO
+    bcm2835_gpio_fsel(R_PIN, BCM2835_GPIO_FSEL_OUTP);
+    bcm2835_gpio_fsel(Y_PIN, BCM2835_GPIO_FSEL_OUTP);
+    bcm2835_gpio_fsel(G_PIN, BCM2835_GPIO_FSEL_OUTP);
+    printf("gpio init competely\n");
+}
+
+#endif
 
 int g_stop = 0;
 void sig_exit(int sig_num)
 {
+    printf("catch Chrl+C\n");
     if(sig_num == SIGINT)
         g_stop = 1;
 }
@@ -44,14 +61,14 @@ void sig_alarm(int sig_num)
 {
     alarm(50);
     printf("start pub \n");
-                    
+
     if( mqtt_pub(comport,&temp, light_state) < 0 )
     {
         printf("pub unsuccessfully\n");
         disconn_mqtt(comport);
         exit 0;
     }
-    
+
     printf("pub down\n");
 }
 
@@ -68,30 +85,29 @@ int main (int argc, char *argv[])
 
     char              buf[256];
 
-    float temp = 0;
-    int temp_rv = 0;
+    float             temp = 0;
+    int               temp_rv = 0;
 
-    uint8_t light_state = 2;
+    uint8_t           light_state = 2;
 
-    int     mqtt_state = -1;
-    
+    int               mqtt_state = -1;
+
     signal(SIGINT,sig_exit);
-   // signal(SIGALRM,sig_alarm);
-    alarm(50);
-    
+    // signal(SIGALRM,sig_alarm);
+    // alarm(50);
+
     //gpio init
     if (!bcm2835_init())
         return 1;
 
     //初始化OLED
-    OLED_Init();                         //initialise OLED module  
+    OLED_Init();                 //initialise OLED module  
     OLED_Clear(0);               //clear OLED screen(black)
 
+    GPIO_init();
 
-    //设置引脚为输出状态，即初始化GPIO
-    bcm2835_gpio_fsel(R_PIN, BCM2835_GPIO_FSEL_OUTP);
-    bcm2835_gpio_fsel(Y_PIN, BCM2835_GPIO_FSEL_OUTP);
-    bcm2835_gpio_fsel(G_PIN, BCM2835_GPIO_FSEL_OUTP);
+
+    turn_light_on(Y_PIN);
 
     //日志初始化
     if ( logger_init(&logger, DBG_LOG_FILE, LOG_LEVEL_NRML, LOG_ROLLBACK_NONE) || logger_open() )
@@ -135,7 +151,8 @@ int main (int argc, char *argv[])
     //在OLED上显示是否连接成功
     show_connect_result(mqtt_state);
     //连接成功亮绿灯
-    bcm2835_gpio_write(G_PIN, HIGH);
+    //bcm2835_gpio_write(G_PIN, HIGH);
+    turn_light_on(G_PIN);
 
     //订阅主题
     if( mqtt_sub(comport) < 0 ) 
@@ -153,15 +170,17 @@ int main (int argc, char *argv[])
 
         if( temp_rv < 0 ) 
         {
-                printf("ERROR:  get temperature failure %d\n", temp_rv);   
-                return -1;
+            printf("ERROR:  get temperature failure %d\n", temp_rv);   
+            disconn_mqtt(comport);
+            return -1;
         }
         printf(" temperature: %f\n", temp);
 
         //如果温度高于30度，亮起红灯             
         if (temp > 30)
         {
-            bcm2835_gpio_write(R_PIN, HIGH);         
+            turn_light_on(R_PIN);
+            //bcm2835_gpio_write(R_PIN, HIGH);         
         }
         //将黄灯的状态和温度显示在屏幕上
         show_msg(&temp, light_state);
@@ -170,21 +189,22 @@ int main (int argc, char *argv[])
 
         //将采集的温度和台灯状态上发到腾讯云
 #if 1 
-    if( mqtt_pub(comport,&temp, light_state) < 0 )
-    {
-        printf("pub unsuccessfully\n");
-        disconn_mqtt(comport);
-        return -7;
-    }
+        if( mqtt_pub(comport,&temp, light_state) < 0 )
+        {
+            printf("pub unsuccessfully\n");
+            disconn_mqtt(comport);
+            return -7;
+        }
 #endif 
-    delay_ms(1000);
-   }
+        delay_ms(1000);
+    }
 
 
 
 
 
 
+    delay_ms(8000);
     //退出程序前，断开与腾讯云的连接
     if( disconn_mqtt(comport) < 0 )
     {
@@ -198,7 +218,7 @@ int main (int argc, char *argv[])
     bcm2835_gpio_write(Y_PIN, LOW);
     bcm2835_gpio_write(G_PIN, LOW);
     bcm2835_close();
-   
+
     comport_term(comport);
     logger_term();
 

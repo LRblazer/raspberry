@@ -1,12 +1,12 @@
 /*********************************************************************************
- *      Copyright:  (C) LingYun IoT System Studio
+ *      Copyright:  (C) big world 
  *                  All rights reserved.
  *
  *       Filename:  comport.h
  *    Description:  This head file is linux serial port operate API
  *                   
  *        Version:  1.0.0(7/17/2020)
- *         Author:  Guo Wenxue <guowenxue@gmail.com>
+ *         Author:  xuxinhua <1411032148@qq.com>
  *      ChangeLog:  1, Release initial version on "7/17/2020 03:33:25 PM"
  *                     
  ********************************************************************************/

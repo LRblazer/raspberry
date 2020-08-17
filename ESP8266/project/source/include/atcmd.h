@@ -1,12 +1,12 @@
 /********************************************************************************
- *      Copyright:  (C) 2020 LingYun IoT System Studio
+ *      Copyright:  (C) 2020 big world
  *                  All rights reserved.
  *
  *       Filename:  atcmd.h
  *    Description:  This head file is AT command API for GPRS/NB-IoT/WiFi modules.
  *
  *        Version:  1.0.0(2020年07月26日)
- *         Author:  Guo Wenxue <guowenxue@gmail.com>
+ *         Author:  xuxinhua <1411032148@.com>
  *      ChangeLog:  1, Release initial version on "2020年07月26日 15时24分07秒"
  *                 
  ********************************************************************************/

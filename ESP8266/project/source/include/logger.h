@@ -1,12 +1,12 @@
 /********************************************************************************
- *      Copyright:  (C) 2020 LingYun IoT System Studio
+ *      Copyright:  (C) 2020 big world
  *                  All rights reserved.
  *
  *       Filename:  logger.h
  *    Description:  This file is the linux infrastructural logger system library
  *
  *        Version:  1.0.0(08/08/2020~)
- *         Author:  Guo Wenxue <guowenxue@gmail.com>
+ *         Author:  xuxinhua <1411032148@qq.com>
  *      ChangeLog:  1, Release initial version on "08/08/2020 05:16:56 PM"
  *                 
  ********************************************************************************/

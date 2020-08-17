@@ -101,13 +101,14 @@ int main (int argc, char *argv[])
         return 1;
 
     //初始化OLED
-    OLED_Init();                         //initialise OLED module  
+    OLED_Init();                 //initialise OLED module  
     OLED_Clear(0);               //clear OLED screen(black)
 
     GPIO_init();
 
 
     turn_light_on(Y_PIN);
+
     //日志初始化
     if ( logger_init(&logger, DBG_LOG_FILE, LOG_LEVEL_NRML, LOG_ROLLBACK_NONE) || logger_open() )
     {
@@ -150,7 +151,8 @@ int main (int argc, char *argv[])
     //在OLED上显示是否连接成功
     show_connect_result(mqtt_state);
     //连接成功亮绿灯
-    bcm2835_gpio_write(G_PIN, HIGH);
+    //bcm2835_gpio_write(G_PIN, HIGH);
+    turn_light_on(G_PIN);
 
     //订阅主题
     if( mqtt_sub(comport) < 0 ) 
@@ -177,7 +179,8 @@ int main (int argc, char *argv[])
         //如果温度高于30度，亮起红灯             
         if (temp > 30)
         {
-            bcm2835_gpio_write(R_PIN, HIGH);         
+            turn_light_on(R_PIN);
+            //bcm2835_gpio_write(R_PIN, HIGH);         
         }
         //将黄灯的状态和温度显示在屏幕上
         show_msg(&temp, light_state);
