@@ -14,7 +14,7 @@ CC = gcc
 DEBUG = -g -O0
 CFLAGS += $(DEBUG)
 
-LIB = -lbcm2835 -lpthread
+LIB = -lbcm2835 -lpthread -lsqlite3
 
 ${TARGET}:${OBJ_O}
 	$(CC) $(CFLAGS) $(OBJ_O) -o $@ $(LIB)

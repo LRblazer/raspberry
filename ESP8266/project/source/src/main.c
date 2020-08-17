@@ -28,6 +28,8 @@
 #include "get_time.h"
 #include "esp_mqtt.h"
 #include "gpio.h"
+#include "sqlite3.h"
+#include "my_sqlite3.h"
 
 #if 0
 
@@ -85,17 +87,23 @@ typedef void *(THREAD_BODY) (void *thread_arg);
 void *thread_worker(void *ctx);
 int thread_start(pthread_t * thread_id, THREAD_BODY * thread_workbody, void *thread_arg);  
 
+//定义锁
 typedef struct   worker_ctx_s 
 { 
         pthread_mutex_t   lock; 
 } worker_ctx_t; 
 
+//声明为全局变量
 comport_t         *comport;
 
 int main (int argc, char *argv[])
 { 
     logger_t          logger;
 
+    //下面三个数组用于存放将要存入数据的采集到的数据
+    char              iot_dev[5] = "dev1";
+    char              sqlite_temp[10];
+    char              sqlite_time[20];
 
 //    comport_t        *comport = NULL;
     char             *dev_name = "/dev/ttyUSB0";
@@ -114,6 +122,20 @@ int main (int argc, char *argv[])
     pthread_t         tid;
     worker_ctx_t      worker_ctx;
 
+    sqlite3 * db;
+    char *errmsg;
+
+    //打开数据库
+    if(sqlite3_open("./../../temp.db", &db) != SQLITE_OK)
+    {
+        printf("%s\n",sqlite3_errmsg(db));
+        return -1;
+    }
+    else
+    {
+        printf("open temp.db success\n");
+    }
+
     signal(SIGINT,sig_exit);
     //     signal(SIGALRM,sig_alarm);
     //     alarm(80);
@@ -129,6 +151,7 @@ int main (int argc, char *argv[])
     GPIO_init();
 
 
+    //测试黄灯（台灯）的可工作性
     turn_light_on(Y_PIN);
 
     //日志初始化
@@ -184,6 +207,7 @@ int main (int argc, char *argv[])
         return -6;
     }
 
+    //创建子线程
     thread_start(&tid, thread_worker, &worker_ctx);
 
     while(!g_stop)
@@ -193,6 +217,12 @@ int main (int argc, char *argv[])
         light_state = bcm2835_gpio_lev(Y_PIN);
         temp_rv  = get_temperature(&temp);
 
+#if 1
+        snprintf(sqlite_temp,5,"%.2f C",temp);
+        get_time(sqlite_time);
+        do_insert_query(db, iot_dev,sqlite_time,sqlite_temp);
+
+#endif 
         if( temp_rv < 0 ) 
         {
             printf("ERROR:  get temperature failure %d\n", temp_rv);   
@@ -243,18 +273,23 @@ int main (int argc, char *argv[])
     }
 
 
+    //关闭所有灯
     bcm2835_gpio_write(R_PIN, LOW);
     bcm2835_gpio_write(Y_PIN, LOW);
     bcm2835_gpio_write(G_PIN, LOW);
     bcm2835_close();
 
+    //关闭串口
     comport_term(comport);
+    //关闭日志系统       
     logger_term();
+    //关闭数据库
+    sqlite3_close(db);
 
     return 0; 
 } 
 
-
+//创建子线程
 int thread_start(pthread_t * thread_id, THREAD_BODY * thread_workbody, void *thread_arg)
 {  
     int                 rv = -1;  
@@ -291,7 +326,7 @@ CleanUp:
 }
 
 
-
+//子线程处理函数，用于接受来自腾讯云下发的命令
 void *thread_worker(void *ctx)
 {
             int                  rv;    
@@ -335,7 +370,7 @@ void *thread_worker(void *ctx)
 
                     }else if(state[0]== '0')
                     {
-                        printf("turn on yellow light \n");
+                        printf("turn off yellow light \n");
                         turn_light_off(Y_PIN); 
                     }
                 }
