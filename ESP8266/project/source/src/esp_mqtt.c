@@ -13,6 +13,12 @@
 
 #include "esp_mqtt.h"
 #include "delay.h"
+#include <stdio.h>
+#include "iniparser.h"
+#include "dictionary.h"
+
+
+#define PATH "/home/pi/my_jobs/my_github/raspberry/ESP8266/project/config.ini"
 
 /***********************************************************
  * function :      测试esp8266 是否可以正常工作
@@ -67,9 +73,26 @@ int check_esp(comport_t *comport)
  ***********************************************************/
 int join_route(comport_t *comport)
 {
+    dictionary *ini= NULL;
+    ini = iniparser_load(PATH);
 
     char r_buf[256];
+    char s_buf[30];
+    
 
+    if( ini ==NULL)
+    {
+        printf("inipar  failure\n");
+        return -1;
+    }
+    const char *ssid = iniparser_getstring(ini, "router:ssid", "null");
+    const char *passward  = iniparser_getstring(ini, "router:passward", "null");
+    printf("%s\n", ssid);
+    printf("%s\n", passward);
+
+    snprintf(s_buf, sizeof(s_buf),"AT+CWJAP=\"%s\",\"%s\"\r\n", ssid, passward);
+
+    printf("%s\n",s_buf);
 
     printf("join route\n");
 
@@ -83,7 +106,7 @@ int join_route(comport_t *comport)
     memset(r_buf, 0, sizeof(r_buf));
 
     //AT+CWJAP 加入新的路由器
-    if( send_atcmd(comport, "AT+CWJAP=\"xxs\",\"xuxinhua666\"\r\n", 5000, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
+    if( send_atcmd(comport, s_buf, 5000, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
     {
         log_err("Send command AT+CWJAP got error\n");
         return -2;
@@ -109,6 +132,7 @@ int join_route(comport_t *comport)
     }
     printf("Send command 'AT+CIFSR' got reply: %s\n",r_buf);
 
+    iniparser_freedict(ini);
     return 0;
 }
 
