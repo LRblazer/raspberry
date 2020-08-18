@@ -66,7 +66,7 @@ void print_usage(char *progname)
     return;
 }
 
-
+//信号处理函数，使主线程能正常退出
 int g_stop = 0;
 void sig_exit(int sig_num)
 {
@@ -114,11 +114,13 @@ typedef struct   worker_ctx_s
 //声明为全局变量
 comport_t         *comport;
 
+
+//主函数
 int main (int argc, char *argv[])
 { 
     logger_t          logger;
 
-    //下面三个数组用于存放将要存入数据的采集到的数据
+    //下面三个数组用于存放将要存入数据库的采集到的数据
     char              iot_dev[5] = "dev1";
     char              sqlite_temp[10] = "";
     char              sqlite_time[30] = "";
@@ -149,6 +151,7 @@ int main (int argc, char *argv[])
     int               opt;
     int               daemon_run = 0;
 
+    //命令行参数解析
     struct  option  long_options[] =
     {
         {"daemon",no_argument, NULL, 'b'},
@@ -176,6 +179,13 @@ int main (int argc, char *argv[])
         }   
     }
 
+    if( !dev_name ) 
+    {
+        print_usage(progname);   
+        return -1;
+    }
+    
+    //判断是否要放到后台运行
      if( daemon_run ) 
      {
          int my_txt_log = -1;
@@ -183,7 +193,7 @@ int main (int argc, char *argv[])
          if ((daemon(1, 1)) < 0)
          {
              printf("Deamon failure : %s\n", strerror(errno));
-             return 0;
+             return -1;
          }
      }
 
@@ -273,6 +283,7 @@ int main (int argc, char *argv[])
     thread_start(&tid, thread_worker1, &worker_ctx);
     //  thread_start(&tid, thread_worker2, &worker_ctx);
 
+    //主线程循环
     while(!g_stop)
     {
         sleep(3);
@@ -281,11 +292,11 @@ int main (int argc, char *argv[])
         temp_rv  = get_temperature(&temp);
 
 #if 1
-
         snprintf(sqlite_temp,10,"%.2f C",temp);
         get_time(sqlite_time);
         do_insert_query(db, iot_dev,sqlite_time,sqlite_temp);
 #endif 
+
         if( temp_rv < 0 ) 
         {
             printf("ERROR:  get temperature failure %d\n", temp_rv);   
@@ -412,6 +423,7 @@ void *thread_worker1(void *ctx)
         pthread_mutex_trylock(&ictx->lock); 
 
         rv = comport_recv(comport,r_buf,1024 , 1);
+        //解析从串口接收到的数据
         if (rv > 0 && strstr(r_buf, "control")!= NULL )
         {   
             printf("receive[ %d ] buf from tengxun is: %s\n ", rv, r_buf);     
