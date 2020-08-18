@@ -77,7 +77,7 @@ int join_route(comport_t *comport)
     ini = iniparser_load(PATH);
 
     char r_buf[256];
-    char s_buf[30];
+    char s_buf[40];
     
 
     if( ini ==NULL)
@@ -105,15 +105,27 @@ int join_route(comport_t *comport)
     printf("Send command 'AT+CWQAP' got reply: %s\n",r_buf);
     memset(r_buf, 0, sizeof(r_buf));
 
+#if 0
     //AT+CWJAP 加入新的路由器
-    if( send_atcmd(comport, s_buf, 5000, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
+    if( send_atcmd(comport, s_buf, 8000, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
     {
         log_err("Send command AT+CWJAP got error\n");
         return -2;
     }
     printf("Send command 'AT+CWJAP' got reply: %s\n",r_buf);
     memset(r_buf, 0, sizeof(r_buf));
+#else
 
+    if( send_atcmd(comport, "AT+CWJAP=\"xxs\",\"xuxinhua666\"\r\n", 5000, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
+    {
+        log_err("Send command AT+CWJAP got error\n");
+        return -2;
+    }
+    printf("Send command 'AT+CWJAP' got reply: %s\n",r_buf);
+    memset(r_buf, 0, sizeof(r_buf));
+#endif
+
+    delay_ms(3000);
     //AT+PING="baidu.com" 测试是否可以联网
     if( send_atcmd(comport, "AT+PING=\"baidu.com\"\r\n", 500, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
     {
@@ -123,6 +135,7 @@ int join_route(comport_t *comport)
     printf("Send command 'AT+PING' got reply: %s\n",r_buf);
     memset(r_buf, 0, sizeof(r_buf));
 
+    delay_ms(3000);
 
     //AT+CIFSR 查询新连接的AP信息
     if( send_atcmd(comport, "AT+CIFSR\r\n", 500, AT_EXPSTR, AT_ERRSTR,r_buf, sizeof(r_buf)) <= 0 )
