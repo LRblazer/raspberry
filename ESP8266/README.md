@@ -1,8 +1,7 @@
 这个项目主要将树莓派上获取的温度和台灯的状态通过ESP8266上传腾讯云，并且显示在OLED的屏幕上,并且同步到sqlite3数据库中
 腾讯云也可以下发命令控制灯的亮灭
 主要是通过串口编程与AT指令控制ESP8266
-![系统架构](https://images.gitee.com/uploads/images/2020/0819/081418_21ed0f46_5677712.png "项目框架.png")
-
+https://images.gitee.com/uploads/images/2020/0819/082040_f329e504_5677712.jpeg
 
 
 
